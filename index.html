@@ -4,7 +4,160 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Cure Hospital - Mobile CMMS App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">
+    let nextMedicalNum = 11;
+    let nextNonMedicalNum = 12;
+
+    function initNewOrderForm() {
+      const now = new Date();
+      // Format to YYYY-MM-DDTHH:MM
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+      const medDateInput = document.getElementById('med-datetime');
+      if (medDateInput && !medDateInput.value) medDateInput.value = currentDateTime;
+
+      const nonMedDateInput = document.getElementById('nonmed-datetime');
+      if (nonMedDateInput && !nonMedDateInput.value) nonMedDateInput.value = currentDateTime;
+
+      updateOrderPreviewBadge('medical');
+    }
+
+    function setOrderFormType(type) {
+      const btnMed = document.getElementById('btn-type-medical');
+      const btnNonMed = document.getElementById('btn-type-nonmedical');
+      const formMed = document.getElementById('form-medical');
+      const formNonMed = document.getElementById('form-nonmedical');
+
+      if (type === 'medical') {
+        btnMed.className = "flex flex-col items-center justify-center p-2 rounded-xl bg-teal-600 text-white font-bold transition shadow-sm";
+        btnNonMed.className = "flex flex-col items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white transition";
+        formMed.classList.remove('hidden');
+        formNonMed.classList.add('hidden');
+        updateOrderPreviewBadge('medical');
+      } else {
+        btnNonMed.className = "flex flex-col items-center justify-center p-2 rounded-xl bg-amber-600 text-white font-bold transition shadow-sm";
+        btnMed.className = "flex flex-col items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white transition";
+        formNonMed.classList.remove('hidden');
+        formMed.classList.add('hidden');
+        updateOrderPreviewBadge('non-medical');
+      }
+    }
+
+    function updateOrderPreviewBadge(type) {
+      const badge = document.getElementById('next-wo-preview');
+      if (!badge) return;
+      if (type === 'medical') {
+        badge.innerText = `WO-MED-2026-${String(nextMedicalNum).padStart(3, '0')}`;
+        badge.className = "text-[10px] bg-teal-950 text-teal-300 border border-teal-800 px-2 py-0.5 rounded font-mono font-bold";
+      } else {
+        badge.innerText = `WO-FAC-2026-${String(nextNonMedicalNum).padStart(3, '0')}`;
+        badge.className = "text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded font-mono font-bold";
+      }
+    }
+
+    function submitNewOrder(e, type) {
+      e.preventDefault();
+      
+      let woId, dept, asset, faultDesc, scope, techName, isNotified, sla, estCost, notes, dateTimeVal;
+      let orderTypeStr, teamStr, priorityStr;
+
+      if (type === 'medical') {
+        dateTimeVal = document.getElementById('med-datetime').value;
+        dept = document.getElementById('med-dept').value;
+        asset = document.getElementById('med-asset-name').value;
+        faultDesc = document.getElementById('med-fault-desc').value;
+        scope = document.querySelector('input[name="med-scope"]:checked')?.value || "صيانة داخلية";
+        techName = document.getElementById('med-tech-name').value;
+        isNotified = document.querySelector('input[name="med-notified"]:checked')?.value || "نعم";
+        sla = document.getElementById('med-sla-duration').value;
+        estCost = parseFloat(document.getElementById('med-cost-est').value) || 0;
+        notes = document.getElementById('med-notes').value;
+
+        woId = `WO-MED-2026-${String(nextMedicalNum).padStart(3, '0')}`;
+        nextMedicalNum++;
+        orderTypeStr = "طبي";
+        teamStr = "الهندسة الطبية";
+        priorityStr = sla.includes("أقل من 4") ? "عاجل / حرج P1" : "عاجل / مرتفع";
+      } else {
+        dateTimeVal = document.getElementById('nonmed-datetime').value;
+        dept = document.getElementById('nonmed-dept').value;
+        asset = document.getElementById('nonmed-asset-name').value;
+        faultDesc = document.getElementById('nonmed-fault-desc').value;
+        scope = document.querySelector('input[name="nonmed-scope"]:checked')?.value || "صيانة داخلية";
+        techName = document.getElementById('nonmed-tech-name').value;
+        isNotified = document.querySelector('input[name="nonmed-notified"]:checked')?.value || "نعم";
+        sla = document.getElementById('nonmed-sla-duration').value;
+        estCost = parseFloat(document.getElementById('nonmed-cost-est').value) || 0;
+        notes = document.getElementById('nonmed-notes').value;
+
+        woId = `WO-FAC-2026-${String(nextNonMedicalNum).padStart(3, '0')}`;
+        nextNonMedicalNum++;
+        orderTypeStr = "غير طبي";
+        teamStr = "الصيانة العامة والمرافق";
+        priorityStr = sla.includes("طوارئ") ? "عاجل / حرج P1" : "متوسط";
+      }
+
+      const datePart = dateTimeVal ? dateTimeVal.split('T')[0] : '2026-11-19';
+      const timePart = dateTimeVal ? dateTimeVal.split('T')[1] : '21:00';
+
+      const newOrder = {
+        id: woId,
+        dept: dept,
+        asset: asset,
+        type: orderTypeStr,
+        priority: priorityStr,
+        sla: sla,
+        status: "قيد التنفيذ",
+        progress: 20,
+        cost: estCost,
+        team: teamStr,
+        date: datePart,
+        time: timePart,
+        scope: scope,
+        techName: techName,
+        notified: isNotified,
+        desc: faultDesc,
+        notes: notes,
+        isNew: true
+      };
+
+      // Add to beginning of workOrders
+      workOrders.unshift(newOrder);
+
+      // Show Rich Confirmation Alert
+      alert(`✅ تم فتح طلب الصيانة بنجاح وإصدار أمر الشغل!\n\n` +
+            `📌 رقم الطلب: ${woId}\n` +
+            `🏥 النوع: ${orderTypeStr} (${scope})\n` +
+            `📍 القسم: ${dept}\n` +
+            `🔬 الأصل/القطعة: ${asset}\n` +
+            `⚠️ العطل: ${faultDesc}\n` +
+            `👨‍🔧 الفني المعتمد: ${techName}\n` +
+            `📢 حالة التبليغ: ${isNotified}\n` +
+            `⏳ المدة المتوقعة (SLA): ${sla}\n` +
+            `💰 التكلفة المقدرة: ${estCost.toLocaleString()} ج.م\n\n` +
+            `🚀 تم ترحيل الطلب فوراً إلى جدول أوامر الشغل وجاري نقلك لمتابعته!`);
+
+      // Reset form fields
+      if (type === 'medical') {
+        document.getElementById('med-asset-name').value = '';
+        document.getElementById('med-fault-desc').value = '';
+        document.getElementById('med-notes').value = '';
+      } else {
+        document.getElementById('nonmed-asset-name').value = '';
+        document.getElementById('nonmed-fault-desc').value = '';
+        document.getElementById('nonmed-notes').value = '';
+      }
+
+      // Switch to orders tab to see the newly created order
+      switchTab('orders');
+    }
+
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#020617">
@@ -199,6 +352,332 @@
 
       </div>
 
+            <!-- TAB 5: NEW MAINTENANCE WORK ORDER (طلب صيانة جديد متخصص) -->
+      <div id="tab-new-order" class="space-y-3.5 hidden">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+              <span class="text-teal-400">➕</span> فتح طلب صيانة جديد (Work Order)
+            </h2>
+            <p class="text-[10px] text-slate-400 mt-0.5">تسجيل بلاغ عطل وتوجيه فوري لفرق الصيانة الطبية والمرافق</p>
+          </div>
+          <span class="text-[10px] bg-teal-950 text-teal-300 border border-teal-800 px-2 py-0.5 rounded font-mono font-bold" id="next-wo-preview">WO-MED-2026-011</span>
+        </div>
+
+        <!-- Type Selector Toggle (طبية vs غير طبية) -->
+        <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
+          <button type="button" onclick="setOrderFormType('medical')" id="btn-type-medical" class="flex flex-col items-center justify-center p-2 rounded-xl bg-teal-600 text-white font-bold transition shadow-sm">
+            <span class="text-base mb-0.5">🏥</span>
+            <span class="text-xs">صيانة أجهزة طبية</span>
+            <span class="text-[9px] opacity-80 mt-0.5">Biomedical Engineering</span>
+          </button>
+          <button type="button" onclick="setOrderFormType('non-medical')" id="btn-type-nonmedical" class="flex flex-col items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white transition">
+            <span class="text-base mb-0.5">🏢</span>
+            <span class="text-xs">صيانة غير طبية / مرافق</span>
+            <span class="text-[9px] opacity-80 mt-0.5">Facilities & Maintenance</span>
+          </button>
+        </div>
+
+        <!-- ================= FORM 1: MEDICAL MAINTENANCE ================= -->
+        <form id="form-medical" onsubmit="submitNewOrder(event, 'medical')" class="space-y-3 bg-slate-900 border border-teal-900/60 rounded-2xl p-3.5 shadow-lg">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs font-bold text-teal-300 flex items-center gap-1">
+              <span>🩺</span> بيانات بلاغ الأجهزة الطبية الحيوية
+            </span>
+            <span class="text-[9px] bg-teal-950 text-teal-400 px-2 py-0.5 rounded border border-teal-800">معايير NFPA 99 / JCI</span>
+          </div>
+
+          <!-- 1. Date & Time -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🕒</span> التاريخ والساعة:
+            </label>
+            <input type="datetime-local" id="med-datetime" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none">
+          </div>
+
+          <!-- 2. Department -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🏥</span> القسم الطبي:
+            </label>
+            <select id="med-dept" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none">
+              <option value="الطوارئ">قسم الطوارئ (Emergency Dept)</option>
+              <option value="الرعاية" selected>الرعاية المركزة (ICU)</option>
+              <option value="العمليات">غرف العمليات (OR)</option>
+              <option value="عيادة 1">عيادة 1 (Clinic 1)</option>
+              <option value="عيادة 2">عيادة 2 (Clinic 2)</option>
+              <option value="عيادة 3+ وحدة الإنبدي">عيادة 3 + وحدة الإنبدي (Endoscopy)</option>
+              <option value="عيادة 4">عيادة 4 (Clinic 4)</option>
+              <option value="الدخلي">القسم الداخلي (Inpatient)</option>
+              <option value="المعمل">المعمل المركزي والباثولوجي</option>
+              <option value="الأشعة">قسم الأشعة والتصوير الطبي</option>
+            </select>
+          </div>
+
+          <!-- 3. Medical Device Name -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🔬</span> اسم الجهاز الطبي:
+            </label>
+            <input type="text" id="med-asset-name" list="med-assets-datalist" placeholder="اختر أو اكتب اسم الجهاز (مثل: رسم قلب، مضخة محاليل...)" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none">
+            <datalist id="med-assets-datalist">
+              <option value="أجهزة رسم القلب ECG"></option>
+              <option value="Infusion Pumps – مضخات محاليل"></option>
+              <option value="Syringe Pumps – مضخات سرنجات"></option>
+              <option value="Patient Monitors – مونيتور مراقبة علامات حيوية"></option>
+              <option value="Defibrillator – جهاز صدمات القلب الكهربائية"></option>
+              <option value="Mechanical Ventilator – جهاز تنفس صناعي"></option>
+              <option value="أجهزة قياس الضغط (Sphygmomanometer)"></option>
+              <option value="موازين المرضى الطبية"></option>
+              <option value="وحدة الشفط الجراحي (Suction Unit)"></option>
+              <option value="جهاز التخدير ومبخرات الغازات الطبية"></option>
+              <option value="أجهزة التعقيم المركزي Autoclave"></option>
+            </datalist>
+          </div>
+
+          <!-- 4. Fault Description -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>⚠️</span> وصف العطل بدقة:
+            </label>
+            <textarea id="med-fault-desc" rows="2" placeholder="اذكر المشكلة الملاحظة (مثال: عطل في كابل الليدات، إنذار انسداد مستمر، تلف الصمام، لا يستجيب للشحن...)" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none resize-none"></textarea>
+          </div>
+
+          <!-- 5. Scope: Inside vs Outside -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🔄</span> صيانة خارجية ولا داخلية؟:
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-teal-600 transition">
+                <input type="radio" name="med-scope" value="صيانة داخلية (الهندسة الطبية)" checked class="text-teal-600 focus:ring-0">
+                <span class="text-[11px] text-slate-200">صيانة داخلية (فريق المستشفى)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-teal-600 transition">
+                <input type="radio" name="med-scope" value="صيانة خارجية (وكيل معتمد)" class="text-teal-600 focus:ring-0">
+                <span class="text-[11px] text-slate-200">صيانة خارجية (وكيل الجهاز)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 6. Authorized Biomedical Engineer/Technician Name -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>👨‍🔧</span> اسم فني / مهندس الصيانة المعتمد:
+            </label>
+            <select id="med-tech-name" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none">
+              <option value="م. أحمد فريد (مدير الهندسة الطبية)">م. أحمد فريد (مدير الهندسة الطبية)</option>
+              <option value="م. كريم سامح (مهندس الرعاية والعمليات)" selected>م. كريم سامح (مهندس أجهزة الرعاية والعمليات)</option>
+              <option value="فني إسلام محمود (فني أجهزة الطوارئ والعيادات)">فني إسلام محمود (فني أجهزة الطوارئ والعيادات)</option>
+              <option value="م. سارة عادل (مهندسة المعايرة وضمان الجودة)">م. سارة عادل (مهندسة المعايرة وضمان الجودة)</option>
+              <option value="وكيل الجهاز المعتمد (الشركة الموردة الخارجية)">وكيل الجهاز المعتمد (الشركة الموردة الخارجية)</option>
+            </select>
+          </div>
+
+          <!-- 7. Technician Notified? -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>📢</span> هل تم تبليغ الفني؟:
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-emerald-900/60 cursor-pointer">
+                <input type="radio" name="med-notified" value="نعم، تم التبليغ والاستلام اللحظي" checked class="text-emerald-500 focus:ring-0">
+                <span class="text-[11px] text-emerald-400 font-bold">🟢 نعم، تم التبليغ</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+                <input type="radio" name="med-notified" value="لم يتم بعد (قيد الإخطار)" class="text-rose-500 focus:ring-0">
+                <span class="text-[11px] text-rose-400 font-bold">🔴 لم يتم بعد</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 8. Expected SLA Duration & 9. Estimated Cost -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <label class="text-[11px] font-semibold text-slate-300">⏳ مدة الصيانة المتوقعة:</label>
+              <select id="med-sla-duration" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none">
+                <option value="أقل من 4 ساعات (حرج)">أقل من 4 ساعات (حرج)</option>
+                <option value="خلال 24 ساعة" selected>خلال 24 ساعة (عاجل)</option>
+                <option value="خلال 24-48 ساعة">خلال 24 - 48 ساعة</option>
+                <option value="خلال 3-5 أيام">خلال 3 - 5 أيام (قطع غيار)</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-semibold text-slate-300">💰 التكلفة المتوقعة (ج.م):</label>
+              <input type="number" id="med-cost-est" value="1200" min="0" step="50" required class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none font-bold text-teal-300">
+            </div>
+          </div>
+
+          <!-- 10. Notes -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>📝</span> ملاحظات ودرجة الخطورة الإكلينيكية:
+            </label>
+            <textarea id="med-notes" rows="2" placeholder="ملاحظات توفر جهاز بديل في القسم، عزل الجهاز، متطلبات قطع الغيار المعتمدة..." class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 text-white rounded-xl p-2 text-xs outline-none resize-none"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition">
+            <span>🚀</span>
+            <span>اعتماد وفتح أمر الشغل الطبي فوراً</span>
+          </button>
+        </form>
+
+
+        <!-- ================= FORM 2: NON-MEDICAL / FACILITIES MAINTENANCE ================= -->
+        <form id="form-nonmedical" onsubmit="submitNewOrder(event, 'non-medical')" class="space-y-3 bg-slate-900 border border-amber-900/60 rounded-2xl p-3.5 shadow-lg hidden">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs font-bold text-amber-300 flex items-center gap-1">
+              <span>🔧</span> بيانات بلاغ الصيانة العامة والمرافق
+            </span>
+            <span class="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-800">معايير ASHE / OHS</span>
+          </div>
+
+          <!-- 1. Date & Time -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🕒</span> التاريخ والساعة:
+            </label>
+            <input type="datetime-local" id="nonmed-datetime" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none">
+          </div>
+
+          <!-- 2. Department / Location -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🏢</span> القسم / الموقع بالمستشفى:
+            </label>
+            <select id="nonmed-dept" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none">
+              <option value="الطوارئ">قسم الطوارئ والملاحظة</option>
+              <option value="الرعاية">الرعاية المركزة</option>
+              <option value="العمليات">غرف وممرات العمليات</option>
+              <option value="عيادة 1">مبنى العيادات الخارجية - عيادة 1</option>
+              <option value="عيادة 2" selected>مبنى العيادات الخارجية - عيادة 2</option>
+              <option value="عيادة 3+ وحدة الإنبدي">مبنى العيادات - عيادة 3 ووحدة المناظير</option>
+              <option value="عيادة 4">مبنى العيادات الخارجية - عيادة 4</option>
+              <option value="الدخلي">غرف وأجنحة القسم الداخلي</option>
+              <option value="المرافق والمبنى الإداري">المرافق العامة، الاستقبال والمبنى الإداري</option>
+              <option value="محطة الكهرباء والمولدات">غرفة الكهرباء الرئيسية والمولدات</option>
+              <option value="المصاعد والخدمات">مصاعد المرضى والخدمات المركزية</option>
+            </select>
+          </div>
+
+          <!-- 3. Facility Equipment or Fixture Name -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🔩</span> اسم الجهاز أو القطعة:
+            </label>
+            <input type="text" id="nonmed-asset-name" list="nonmed-assets-datalist" placeholder="اختر أو اكتب اسم القطعة (تكييف، سباكة، كهرباء، دهانات، مصاعد...)" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none">
+            <datalist id="nonmed-assets-datalist">
+              <option value="التكييفات وتدفق الهواء (HVAC)"></option>
+              <option value="التكييفات الاسبليت ووحدات التبريد"></option>
+              <option value="السباكة والحنفيات وخلاطات التعقيم"></option>
+              <option value="شبكة الصرف وحمامات الغرف"></option>
+              <option value="الإنارة واللوحات والمفاتيح الكهربائية"></option>
+              <option value="الدهانات وحالة الحوائط والأسقف"></option>
+              <option value="الأبواب والمفصلات والكوالين والأثاث"></option>
+              <option value="مصاعد المرضى والزوار"></option>
+              <option value="شبكة مواسير الغازات الطبية ومحابس العزل"></option>
+              <option value="المولد الكهربائي الاحتياطي ومفاتيح ATS"></option>
+              <option value="نظام إنذار ومكافحة الحريق"></option>
+            </datalist>
+          </div>
+
+          <!-- 4. Fault Description -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>⚠️</span> وصف العطل بدقة:
+            </label>
+            <textarea id="nonmed-fault-desc" rows="2" placeholder="اذكر تفاصيل المشكلة (تسريب مياه بالحوض، توقف التبريد وسماع صوت ضاغط، انقطاع إضاءة، كسر مقبض باب، تقشير دهان برطوبة...)" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none resize-none"></textarea>
+          </div>
+
+          <!-- 5. Scope: Inside vs Outside -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>🔄</span> صيانة خارجية ولا داخلية؟:
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-amber-600 transition">
+                <input type="radio" name="nonmed-scope" value="صيانة داخلية (الصيانة العامة)" checked class="text-amber-500 focus:ring-0">
+                <span class="text-[11px] text-slate-200">صيانة داخلية (فريق المستشفى)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-amber-600 transition">
+                <input type="radio" name="nonmed-scope" value="صيانة خارجية (مقاول/شركة متخصصة)" class="text-amber-500 focus:ring-0">
+                <span class="text-[11px] text-slate-200">صيانة خارجية (مقاول/شركة)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 6. Authorized Maintenance Technician Name -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>👷</span> اسم فني الصيانة المعتمد:
+            </label>
+            <select id="nonmed-tech-name" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none">
+              <option value="فني عماد كمال (فني أول كهرباء وتشغيل)">فني عماد كمال (فني أول كهرباء وتشغيل)</option>
+              <option value="فني سعيد فتحي (فني تبريد وتكييف)" selected>فني سعيد فتحي (فني تبريد وتكييف)</option>
+              <option value="فني رمضان حسن (فني شبكات سباكة وصحي)">فني رمضان حسن (فني شبكات سباكة وصحي)</option>
+              <option value="فني محمود نبيل (فني نجارة وأثاث وتجهيزات)">فني محمود نبيل (فني نجارة وأثاث وتجهيزات)</option>
+              <option value="فني صبري عبد الله (فني نقاشة ودهانات)">فني صبري عبد الله (فني نقاشة ودهانات)</option>
+              <option value="مقاول شركة الصيانة المتخصصة (خارجي)">مقاول شركة الصيانة المتخصصة (خارجي)</option>
+            </select>
+          </div>
+
+          <!-- 7. Technician Notified? -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>📢</span> هل تم تبليغ الفني؟:
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-emerald-900/60 cursor-pointer">
+                <input type="radio" name="nonmed-notified" value="نعم، تم استلام البلاغ وتوجيه الفني" checked class="text-emerald-500 focus:ring-0">
+                <span class="text-[11px] text-emerald-400 font-bold">🟢 نعم، تم التبليغ</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+                <input type="radio" name="nonmed-notified" value="لم يتم بعد (قيد التوجيه)" class="text-rose-500 focus:ring-0">
+                <span class="text-[11px] text-rose-400 font-bold">🔴 لم يتم بعد</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 8. Expected Duration & 9. Estimated Cost -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <label class="text-[11px] font-semibold text-slate-300">⏳ مدة الصيانة المتوقعة:</label>
+              <select id="nonmed-sla-duration" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none">
+                <option value="خلال 2-4 ساعات (طوارئ)">خلال 2 - 4 ساعات (طوارئ مياه/كهرباء)</option>
+                <option value="خلال 24 ساعة" selected>خلال 24 ساعة (عاجل)</option>
+                <option value="خلال 3-5 أيام">خلال 3 - 5 أيام (أعمال ترميم)</option>
+                <option value="خلال أسبوع">خلال أسبوع (توريد خامات خاصة)</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-semibold text-slate-300">💰 التكلفة المتوقعة (ج.م):</label>
+              <input type="number" id="nonmed-cost-est" value="450" min="0" step="50" required class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none font-bold text-amber-300">
+            </div>
+          </div>
+
+          <!-- 10. Notes -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+              <span>📝</span> ملاحظات السلامة المهنية والموقع:
+            </label>
+            <textarea id="nonmed-notes" rows="2" placeholder="ملاحظات السلامة المهنية، فصل التيار أو المياه، مواعيد العمل المناسبة بالقسم..." class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 text-white rounded-xl p-2 text-xs outline-none resize-none"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition">
+            <span>🚀</span>
+            <span>اعتماد وفتح أمر شغل المرافق فوراً</span>
+          </button>
+        </form>
+
+      </div>
+
+
       <!-- TAB 3: WORK ORDERS & SLA (FOR ENGINEER) -->
       <div id="tab-orders" class="space-y-3.5 hidden">
         <div class="flex items-center justify-between">
@@ -244,15 +723,19 @@
 
     </div>
 
-    <!-- Bottom Navigation Bar -->
-    <div class="bg-slate-900 border-t border-slate-800 px-3 py-2 flex items-center justify-around text-[10px] text-slate-400">
-      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="flex flex-col items-center gap-0.5 text-teal-400 font-semibold">
+    <!-- Bottom Navigation Bar (5 Actions with Prominent New Order) -->
+    <div class="bg-slate-900 border-t border-slate-800 px-2 py-2 flex items-center justify-around text-[10px] text-slate-400">
+      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="flex flex-col items-center gap-0.5 text-teal-400 font-semibold transition">
         <span class="text-base">📊</span>
         <span>الداشبورد</span>
       </button>
       <button onclick="switchTab('inspection')" id="nav-btn-inspection" class="flex flex-col items-center gap-0.5 hover:text-white transition">
         <span class="text-base">📋</span>
-        <span>المرور اليومي</span>
+        <span>المرور</span>
+      </button>
+      <button onclick="switchTab('new-order')" id="nav-btn-new-order" class="flex flex-col items-center gap-0.5 px-3 py-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-2xl shadow-lg -mt-3.5 border-2 border-slate-900 transition transform active:scale-95">
+        <span class="text-lg leading-none">➕</span>
+        <span class="text-[10px] font-bold">طلب جديد</span>
       </button>
       <button onclick="switchTab('orders')" id="nav-btn-orders" class="flex flex-col items-center gap-0.5 hover:text-white transition">
         <span class="text-base">⚙️</span>
@@ -340,20 +823,30 @@
     }
 
     function switchTab(tabName) {
-      document.querySelectorAll('#tab-inspection, #tab-orders, #tab-dashboard, #tab-repetition').forEach(tab => tab.classList.add('hidden'));
-      document.querySelectorAll('#nav-btn-inspection, #nav-btn-orders, #nav-btn-dashboard, #nav-btn-repetition').forEach(btn => {
+      document.querySelectorAll('#tab-inspection, #tab-orders, #tab-dashboard, #tab-repetition, #tab-new-order').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('#nav-btn-inspection, #nav-btn-orders, #nav-btn-dashboard, #nav-btn-repetition, #nav-btn-new-order').forEach(btn => {
         btn.classList.remove('text-teal-400', 'font-semibold');
-        btn.classList.add('text-slate-400');
+        if (btn.id !== 'nav-btn-new-order') {
+          btn.classList.add('text-slate-400');
+        }
       });
 
-      document.getElementById('tab-' + tabName).classList.remove('hidden');
-      document.getElementById('nav-btn-' + tabName).classList.add('text-teal-400', 'font-semibold');
-      document.getElementById('nav-btn-' + tabName).classList.remove('text-slate-400');
+      const activeTab = document.getElementById('tab-' + tabName);
+      if (activeTab) activeTab.classList.remove('hidden');
+
+      const activeNavBtn = document.getElementById('nav-btn-' + tabName);
+      if (activeNavBtn) {
+        if (tabName !== 'new-order') {
+          activeNavBtn.classList.add('text-teal-400', 'font-semibold');
+          activeNavBtn.classList.remove('text-slate-400');
+        }
+      }
 
       if (tabName === 'inspection') renderDepartmentItems();
       if (tabName === 'orders') renderOrders('all');
       if (tabName === 'dashboard') renderDashboardBars();
       if (tabName === 'repetition') renderRepeatAssets();
+      if (tabName === 'new-order') initNewOrderForm();
     }
 
     function renderDepartmentItems() {
@@ -428,31 +921,56 @@
         let sColor = o.status === 'منتهي/مغلق' ? 'text-emerald-400' : (o.status === 'قيد التنفيذ' ? 'text-blue-400' : 'text-amber-400');
 
         const card = document.createElement('div');
-        card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2";
+        card.className = o.isNew 
+          ? "bg-slate-900 border-2 border-teal-500/80 rounded-2xl p-3.5 space-y-2.5 shadow-lg shadow-teal-950/50 transition" 
+          : "bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5";
+
         card.innerHTML = `
           <div class="flex items-start justify-between">
             <div>
-              <span class="text-[10px] font-bold text-teal-400">${o.id}</span>
-              <h4 class="text-xs font-bold text-white">${o.asset} (${o.dept})</h4>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold font-mono text-teal-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">${o.id}</span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${o.type}</span>
+                ${o.isNew ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold animate-pulse">✨ جديد</span>' : ''}
+              </div>
+              <h4 class="text-xs font-bold text-white mt-1.5">${o.asset} <span class="text-slate-400 font-normal">(${o.dept})</span></h4>
             </div>
             <span class="text-[10px] px-2 py-0.5 rounded-full border ${pColor} font-bold">${o.priority}</span>
           </div>
-          <div class="flex items-center justify-between text-[11px] text-slate-400">
-            <span>المهلة: <strong class="text-white">${o.sla}</strong></span>
-            <span>المنفذ: <strong class="text-slate-300">${o.team}</strong></span>
+
+          <!-- Technical & Execution Details (Requested Fields) -->
+          <div class="text-[11px] bg-slate-950/90 p-2.5 rounded-xl border border-slate-800/80 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">👨‍🔧 الفني المعتمد: <strong class="text-white">${o.techName || "فريق الصيانة المعتمد"}</strong></span>
+              <span class="${(o.notified && o.notified.includes('نعم')) ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'} text-[10px]">
+                ${(o.notified && o.notified.includes('نعم')) ? '🟢 تم التبليغ' : '🔴 قيد التبليغ'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-slate-400 text-[10px]">
+              <span>🔄 النطاق: <strong class="text-slate-200">${o.scope || (o.type === 'طبي' ? 'صيانة داخلية (الهندسة الطبية)' : 'صيانة داخلية')}</strong></span>
+              <span>⏳ المدة المتوقعة: <strong class="text-teal-300 font-mono">${o.sla}</strong></span>
+            </div>
+            ${o.desc ? `<div class="text-amber-200/90 text-[10px] bg-amber-950/30 p-1.5 rounded border border-amber-900/40">⚠️ <strong>العطل:</strong> ${o.desc}</div>` : ''}
+            ${o.notes ? `<div class="text-slate-400 text-[10px] italic">📝 <strong>ملاحظات:</strong> ${o.notes}</div>` : ''}
+            <div class="text-slate-500 text-[9px] flex justify-between pt-0.5">
+              <span>📅 تاريخ البلاغ: ${o.date || '2026-11-19'}</span>
+              <span>🕒 ${o.time || '10:00 ص'}</span>
+            </div>
           </div>
+
           <div class="space-y-1">
             <div class="flex justify-between text-[10px] text-slate-400">
-              <span>نسبة الإنجاز:</span>
+              <span>حالة الإنجاز:</span>
               <span class="font-bold ${sColor}">${o.status} (${o.progress}%)</span>
             </div>
             <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
               <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${o.progress}%"></div>
             </div>
           </div>
-          <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80">
-            <span class="text-purple-300 font-bold">التكلفة: ${o.cost.toLocaleString()} ج.م</span>
-            ${o.status !== 'منتهي/مغلق' ? `<button onclick="closeOrder('${o.id}')" class="text-[10px] bg-teal-600 hover:bg-teal-500 text-white px-2 py-0.5 rounded font-bold">إغلاق واعتماد</button>` : `<span class="text-emerald-400 text-[10px]">✔️ معتمد ومغلق</span>`}
+
+          <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/80">
+            <span class="text-purple-300 font-bold">التكلفة التقديرية: ${o.cost ? o.cost.toLocaleString() : 0} ج.م</span>
+            ${o.status !== 'منتهي/مغلق' ? `<button onclick="closeOrder('${o.id}')" class="text-[10px] bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1 rounded-lg font-bold shadow transition">إغلاق واعتماد</button>` : `<span class="text-emerald-400 text-[10px] font-bold">✔️ معتمد ومغلق</span>`}
           </div>
         `;
         container.appendChild(card);
@@ -538,6 +1056,159 @@
 
     // Default view: Dashboard
     switchTab('dashboard');
+  
+    let nextMedicalNum = 11;
+    let nextNonMedicalNum = 12;
+
+    function initNewOrderForm() {
+      const now = new Date();
+      // Format to YYYY-MM-DDTHH:MM
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+      const medDateInput = document.getElementById('med-datetime');
+      if (medDateInput && !medDateInput.value) medDateInput.value = currentDateTime;
+
+      const nonMedDateInput = document.getElementById('nonmed-datetime');
+      if (nonMedDateInput && !nonMedDateInput.value) nonMedDateInput.value = currentDateTime;
+
+      updateOrderPreviewBadge('medical');
+    }
+
+    function setOrderFormType(type) {
+      const btnMed = document.getElementById('btn-type-medical');
+      const btnNonMed = document.getElementById('btn-type-nonmedical');
+      const formMed = document.getElementById('form-medical');
+      const formNonMed = document.getElementById('form-nonmedical');
+
+      if (type === 'medical') {
+        btnMed.className = "flex flex-col items-center justify-center p-2 rounded-xl bg-teal-600 text-white font-bold transition shadow-sm";
+        btnNonMed.className = "flex flex-col items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white transition";
+        formMed.classList.remove('hidden');
+        formNonMed.classList.add('hidden');
+        updateOrderPreviewBadge('medical');
+      } else {
+        btnNonMed.className = "flex flex-col items-center justify-center p-2 rounded-xl bg-amber-600 text-white font-bold transition shadow-sm";
+        btnMed.className = "flex flex-col items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white transition";
+        formNonMed.classList.remove('hidden');
+        formMed.classList.add('hidden');
+        updateOrderPreviewBadge('non-medical');
+      }
+    }
+
+    function updateOrderPreviewBadge(type) {
+      const badge = document.getElementById('next-wo-preview');
+      if (!badge) return;
+      if (type === 'medical') {
+        badge.innerText = `WO-MED-2026-${String(nextMedicalNum).padStart(3, '0')}`;
+        badge.className = "text-[10px] bg-teal-950 text-teal-300 border border-teal-800 px-2 py-0.5 rounded font-mono font-bold";
+      } else {
+        badge.innerText = `WO-FAC-2026-${String(nextNonMedicalNum).padStart(3, '0')}`;
+        badge.className = "text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded font-mono font-bold";
+      }
+    }
+
+    function submitNewOrder(e, type) {
+      e.preventDefault();
+      
+      let woId, dept, asset, faultDesc, scope, techName, isNotified, sla, estCost, notes, dateTimeVal;
+      let orderTypeStr, teamStr, priorityStr;
+
+      if (type === 'medical') {
+        dateTimeVal = document.getElementById('med-datetime').value;
+        dept = document.getElementById('med-dept').value;
+        asset = document.getElementById('med-asset-name').value;
+        faultDesc = document.getElementById('med-fault-desc').value;
+        scope = document.querySelector('input[name="med-scope"]:checked')?.value || "صيانة داخلية";
+        techName = document.getElementById('med-tech-name').value;
+        isNotified = document.querySelector('input[name="med-notified"]:checked')?.value || "نعم";
+        sla = document.getElementById('med-sla-duration').value;
+        estCost = parseFloat(document.getElementById('med-cost-est').value) || 0;
+        notes = document.getElementById('med-notes').value;
+
+        woId = `WO-MED-2026-${String(nextMedicalNum).padStart(3, '0')}`;
+        nextMedicalNum++;
+        orderTypeStr = "طبي";
+        teamStr = "الهندسة الطبية";
+        priorityStr = sla.includes("أقل من 4") ? "عاجل / حرج P1" : "عاجل / مرتفع";
+      } else {
+        dateTimeVal = document.getElementById('nonmed-datetime').value;
+        dept = document.getElementById('nonmed-dept').value;
+        asset = document.getElementById('nonmed-asset-name').value;
+        faultDesc = document.getElementById('nonmed-fault-desc').value;
+        scope = document.querySelector('input[name="nonmed-scope"]:checked')?.value || "صيانة داخلية";
+        techName = document.getElementById('nonmed-tech-name').value;
+        isNotified = document.querySelector('input[name="nonmed-notified"]:checked')?.value || "نعم";
+        sla = document.getElementById('nonmed-sla-duration').value;
+        estCost = parseFloat(document.getElementById('nonmed-cost-est').value) || 0;
+        notes = document.getElementById('nonmed-notes').value;
+
+        woId = `WO-FAC-2026-${String(nextNonMedicalNum).padStart(3, '0')}`;
+        nextNonMedicalNum++;
+        orderTypeStr = "غير طبي";
+        teamStr = "الصيانة العامة والمرافق";
+        priorityStr = sla.includes("طوارئ") ? "عاجل / حرج P1" : "متوسط";
+      }
+
+      const datePart = dateTimeVal ? dateTimeVal.split('T')[0] : '2026-11-19';
+      const timePart = dateTimeVal ? dateTimeVal.split('T')[1] : '21:00';
+
+      const newOrder = {
+        id: woId,
+        dept: dept,
+        asset: asset,
+        type: orderTypeStr,
+        priority: priorityStr,
+        sla: sla,
+        status: "قيد التنفيذ",
+        progress: 20,
+        cost: estCost,
+        team: teamStr,
+        date: datePart,
+        time: timePart,
+        scope: scope,
+        techName: techName,
+        notified: isNotified,
+        desc: faultDesc,
+        notes: notes,
+        isNew: true
+      };
+
+      // Add to beginning of workOrders
+      workOrders.unshift(newOrder);
+
+      // Show Rich Confirmation Alert
+      alert(`✅ تم فتح طلب الصيانة بنجاح وإصدار أمر الشغل!\n\n` +
+            `📌 رقم الطلب: ${woId}\n` +
+            `🏥 النوع: ${orderTypeStr} (${scope})\n` +
+            `📍 القسم: ${dept}\n` +
+            `🔬 الأصل/القطعة: ${asset}\n` +
+            `⚠️ العطل: ${faultDesc}\n` +
+            `👨‍🔧 الفني المعتمد: ${techName}\n` +
+            `📢 حالة التبليغ: ${isNotified}\n` +
+            `⏳ المدة المتوقعة (SLA): ${sla}\n` +
+            `💰 التكلفة المقدرة: ${estCost.toLocaleString()} ج.م\n\n` +
+            `🚀 تم ترحيل الطلب فوراً إلى جدول أوامر الشغل وجاري نقلك لمتابعته!`);
+
+      // Reset form fields
+      if (type === 'medical') {
+        document.getElementById('med-asset-name').value = '';
+        document.getElementById('med-fault-desc').value = '';
+        document.getElementById('med-notes').value = '';
+      } else {
+        document.getElementById('nonmed-asset-name').value = '';
+        document.getElementById('nonmed-fault-desc').value = '';
+        document.getElementById('nonmed-notes').value = '';
+      }
+
+      // Switch to orders tab to see the newly created order
+      switchTab('orders');
+    }
+
   </script>
 </body>
 </html>
