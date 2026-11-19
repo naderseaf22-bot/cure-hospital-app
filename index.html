@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cure Hospital - Mobile CMMS App</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+    body { font-family: 'Cairo', system-ui, -apple-system, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Native App feel on Mobile Screens */
+    @media (max-width: 640px) {
+      .phone-frame {
+        border: none !important;
+        border-radius: 0 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+      }
+      .mobile-notch {
+        display: none !important;
+      }
+      body {
+        padding: 0 !important;
+        background-color: #020617 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 p-0 sm:p-4 flex flex-col items-center justify-center min-h-screen">
+
+  <!-- Outer Header & Role Switcher (Visible on desktop or top of mobile) -->
+  <div class="w-full max-w-md mb-2 flex items-center justify-between px-3 py-2 bg-slate-950 sm:bg-transparent border-b sm:border-0 border-slate-800">
+    <div>
+      <h1 class="text-xs sm:text-sm font-bold text-teal-400 flex items-center gap-1.5">
+        <span>🏥</span> مستشفى كيور - التطبيق الذكي
+      </h1>
+      <p class="text-[10px] text-slate-400">Cure CMMS Mobile Prototype</p>
+    </div>
+    <!-- Role Switcher -->
+    <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+      <button onclick="setRole('executive')" id="role-btn-executive" class="text-[11px] px-2 py-0.5 rounded font-bold bg-teal-600 text-white transition">المديرة</button>
+      <button onclick="setRole('engineer')" id="role-btn-engineer" class="text-[11px] px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition">مهندس</button>
+      <button onclick="setRole('inspector')" id="role-btn-inspector" class="text-[11px] px-2 py-0.5 rounded font-semibold text-slate-400 hover:text-white transition">فني</button>
+    </div>
+  </div>
+
+  <!-- Mobile Phone Container -->
+  <div class="phone-frame w-full max-w-md bg-slate-950 rounded-[40px] border-4 border-slate-800 shadow-2xl overflow-hidden flex flex-col h-[780px] relative">
+    
+    <!-- Top Status Bar & Notch (Hidden on real phones) -->
+    <div class="mobile-notch bg-slate-900 text-slate-400 px-6 pt-3 pb-2 flex items-center justify-between text-xs border-b border-slate-800/80">
+      <span class="font-semibold text-white">09:41</span>
+      <div class="w-24 h-4 bg-black rounded-full flex items-center justify-center">
+        <div class="w-2 h-2 bg-slate-800 rounded-full"></div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span>5G</span>
+        <span>📶</span>
+        <span>🔋 100%</span>
+      </div>
+    </div>
+
+    <!-- Active User Role Banner -->
+    <div id="role-banner" class="bg-teal-950/80 border-b border-teal-800/50 px-4 py-1.5 flex items-center justify-between text-xs text-teal-300">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="role-title">وضع المستخدم: المديرة التنفيذية (د. هالة مصطفى)</span>
+      </div>
+      <span class="text-[10px] bg-teal-900/60 px-2 py-0.5 rounded text-teal-200">الإدارة العليا</span>
+    </div>
+
+    <!-- Main Screen Container (Scrollable) -->
+    <div id="screen-container" class="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-3.5">
+      
+      <!-- TAB 1: EXECUTIVE DASHBOARD (Default for Executive) -->
+      <div id="tab-dashboard" class="space-y-3.5">
+        
+        <!-- Period Filter Widget -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+          <div class="text-xs font-bold text-slate-200 flex items-center justify-between">
+            <span>📅 محدد الفترة الزمنية للتحليل المالي:</span>
+            <span class="text-[10px] text-teal-400 font-normal">محدث تلقائياً</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="text-[10px] text-slate-400">من تاريخ:</label>
+              <input type="date" value="2026-11-01" id="dash-start-date" onchange="updateDashMetrics()" class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg p-1.5 text-xs outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-400">إلى تاريخ:</label>
+              <input type="date" value="2026-11-30" id="dash-end-date" onchange="updateDashMetrics()" class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg p-1.5 text-xs outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Executive KPI Grid (4 Cards) -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3">
+            <div class="text-[11px] text-slate-400">الجاهزية العامة</div>
+            <div class="text-xl font-extrabold text-emerald-400 mt-0.5">93.1%</div>
+            <div class="text-[10px] text-emerald-500 mt-1">المستهدف: ≥ 95%</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3">
+            <div class="text-[11px] text-slate-400">أعطال حرجة (P1)</div>
+            <div class="text-xl font-extrabold text-rose-400 mt-0.5 flex items-center gap-1.5">
+              <span>1</span>
+              <span class="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded font-normal">عاجل</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-1">مضخة الرعاية (قطع غيار)</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3">
+            <div class="text-[11px] text-slate-400">الطلبات المفتوحة</div>
+            <div class="text-xl font-extrabold text-amber-400 mt-0.5">7 / 15</div>
+            <div class="text-[10px] text-slate-400 mt-1">معدل الإغلاق: 53.3%</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3">
+            <div class="text-[11px] text-slate-400">تكلفة صيانة الفترة</div>
+            <div class="text-base font-extrabold text-purple-300 mt-0.5" id="dash-cost-val">25,850 ج.م</div>
+            <div class="text-[10px] text-purple-400 mt-1">منتهية: 7,300 ج.م</div>
+          </div>
+        </div>
+
+        <!-- Department Operational Readiness Bars -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+          <div class="text-xs font-bold text-white flex items-center justify-between">
+            <span>مقارنة جاهزية الأقسام الثمانية</span>
+            <span class="text-[10px] text-slate-400">معايير JCI FMS</span>
+          </div>
+          <div class="space-y-2 text-xs" id="dept-readiness-bars">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Quick Executive Actions -->
+        <div class="bg-gradient-to-r from-blue-950 to-slate-900 border border-blue-900/60 rounded-2xl p-3 space-y-2">
+          <div class="text-xs font-bold text-blue-300">قرارات تنفيذية مطلوبة اليوم:</div>
+          <ul class="text-[11px] text-slate-300 space-y-1 list-disc list-inside">
+            <li>تعميد أمر شراء جهازين ضغط للرعاية المركزة (WO-2026-005).</li>
+            <li>اعتماد تكهين ميزان عيادة 2 بعد تكرار تلف الحساس (WO-2026-004).</li>
+            <li>توجيه لجنة استكمال جرد القسم الداخلي الميدانية (WO-2026-009).</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- TAB 2: DAILY INSPECTION (FOR INSPECTOR) -->
+      <div id="tab-inspection" class="space-y-3.5 hidden">
+        
+        <!-- Department Selector & Scan Button -->
+        <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold text-slate-300">اختر القسم للمرور اليومي:</label>
+            <span class="text-[10px] text-teal-400 bg-teal-950 px-2 py-0.5 rounded border border-teal-800/60">2026-11-19</span>
+          </div>
+          <select id="dept-select" onchange="renderDepartmentItems()" class="w-full bg-slate-950 border border-slate-700 text-white text-xs rounded-xl p-2 focus:ring-2 focus:ring-teal-500 outline-none">
+            <option value="الطوارئ">قسم الطوارئ (Emergency Room - ER)</option>
+            <option value="الرعاية">قسم الرعاية المركزة (ICU)</option>
+            <option value="عيادة 2">عيادة 2 (الباطنة والقلب)</option>
+            <option value="العمليات">غرف العمليات الجراحية (OR)</option>
+            <option value="عيادة 1">عيادة 1 (الجراحة العامة)</option>
+            <option value="عيادة 3+ وحدة الإنبدي">عيادة 3 + وحدة الإنبدي</option>
+            <option value="عيادة 4">عيادة 4 (الأنف والأذن والسمعيات)</option>
+            <option value="الدخلي">القسم الداخلي (Inpatient Ward)</option>
+          </select>
+
+          <!-- Quick QR Scan Simulated Bar -->
+          <button onclick="simulateQRScan()" class="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-xs transition shadow-md">
+            <span class="text-base">📷</span> مسح باركود الأصل (QR Scanner)
+          </button>
+        </div>
+
+        <!-- Section Progress Indicator -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-semibold text-white">نسبة اكتمال فحص القسم</div>
+            <div class="text-[10px] text-slate-400" id="progress-text">تم فحص 4 من 6 أصول مسجلة</div>
+          </div>
+          <div class="text-right">
+            <span class="text-sm font-bold text-teal-400" id="progress-percent">83%</span>
+            <div class="w-20 bg-slate-800 rounded-full h-1.5 mt-1 overflow-hidden">
+              <div id="progress-bar" class="bg-teal-500 h-1.5 rounded-full" style="width: 83%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checklist Items Container -->
+        <div class="space-y-2.5" id="items-list">
+          <!-- Dynamically populated -->
+        </div>
+
+      </div>
+
+      <!-- TAB 3: WORK ORDERS & SLA (FOR ENGINEER) -->
+      <div id="tab-orders" class="space-y-3.5 hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+            <span>🛠️</span> أوامر العمل ومتابعة الـ SLA
+          </h2>
+          <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700" id="orders-count-badge">8 بلاغات</span>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+          <button onclick="filterOrders('all')" class="bg-teal-600 text-white px-2.5 py-1 rounded-full whitespace-nowrap font-semibold text-[11px]">الكل (10)</button>
+          <button onclick="filterOrders('p1')" class="bg-slate-800 text-red-400 hover:bg-slate-700 px-2.5 py-1 rounded-full whitespace-nowrap border border-red-900/50 text-[11px]">عاجل P1 (3)</button>
+          <button onclick="filterOrders('open')" class="bg-slate-800 text-amber-400 hover:bg-slate-700 px-2.5 py-1 rounded-full whitespace-nowrap border border-amber-900/50 text-[11px]">مفتوح (5)</button>
+          <button onclick="filterOrders('closed')" class="bg-slate-800 text-emerald-400 hover:bg-slate-700 px-2.5 py-1 rounded-full whitespace-nowrap border border-emerald-900/50 text-[11px]">منتهي (5)</button>
+        </div>
+
+        <!-- Work Orders Cards List -->
+        <div class="space-y-2.5" id="orders-cards-list">
+          <!-- Dynamically Populated -->
+        </div>
+      </div>
+
+      <!-- TAB 4: REPETITION & COST ANALYSIS -->
+      <div id="tab-repetition" class="space-y-3.5 hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+            <span>📈</span> تكرار الأعطال وجدوى الاستبدال
+          </h2>
+          <span class="text-[10px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded border border-rose-800">3 أجهزة متكررة</span>
+        </div>
+
+        <p class="text-[11px] text-slate-400">
+          تحليل الأجهزة الأكثر تعرضاً للفشل لتحديد جدوى استمرار الصيانة أو الاستبدال والتكهين الرأسمالي (معايير ASHE / WHO).
+        </p>
+
+        <!-- Repeat Failures List -->
+        <div class="space-y-2.5" id="repeat-assets-list">
+          <!-- Dynamically populated -->
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <div class="bg-slate-900 border-t border-slate-800 px-3 py-2 flex items-center justify-around text-[10px] text-slate-400">
+      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="flex flex-col items-center gap-0.5 text-teal-400 font-semibold">
+        <span class="text-base">📊</span>
+        <span>الداشبورد</span>
+      </button>
+      <button onclick="switchTab('inspection')" id="nav-btn-inspection" class="flex flex-col items-center gap-0.5 hover:text-white transition">
+        <span class="text-base">📋</span>
+        <span>المرور اليومي</span>
+      </button>
+      <button onclick="switchTab('orders')" id="nav-btn-orders" class="flex flex-col items-center gap-0.5 hover:text-white transition">
+        <span class="text-base">⚙️</span>
+        <span>أوامر العمل</span>
+      </button>
+      <button onclick="switchTab('repetition')" id="nav-btn-repetition" class="flex flex-col items-center gap-0.5 hover:text-white transition">
+        <span class="text-base">💰</span>
+        <span>التكرار والتكلفة</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const departmentsData = {
+      "الطوارئ": [
+        { id: "C-ER-ECG01", name: "أجهزة رسم القلب ECG", type: "طبي", qty: 1, status: "يحتاج صيانة", note: "عطل بكابل الليدات وتشويش بالإشارة", priority: "عاجل / حرج", cost: "1,850 ج.م", code: "WO-2026-001" },
+        { id: "C-ER-MON01", name: "Patient Monitors – مونيتور", type: "طبي", qty: 2, status: "سليم ويعمل بكفاءة", note: "فحص دوري مطابق", priority: "منخفض", cost: "0", code: "" },
+        { id: "C-ER-DEF01", name: "أجهزة الصدمات Defibrillator", type: "طبي", qty: 1, status: "سليم ويعمل بكفاءة", note: "اختبار التفريغ سليم", priority: "منخفض", cost: "0", code: "" },
+        { id: "C-ER-PT01", name: "الدهانات وحالة الحوائط", type: "غير طبي", qty: 1, status: "يحتاج صيانة", note: "رطوبة وتقشير بجانب حوض الغسيل", priority: "متوسط", cost: "950 ج.م", code: "WO-2026-006" },
+        { id: "C-ER-AC01", name: "التكييفات", type: "غير طبي", qty: 2, status: "سليم ويعمل بكفاءة", note: "كفاءة التبريد ممتازة", priority: "منخفض", cost: "0", code: "" },
+        { id: "C-ER-O2", name: "أجهزة الأكسجين وملحقاتها", type: "طبي", qty: 2, status: "سليم ويعمل بكفاءة", note: "ضغوط الشبكة سليمة", priority: "منخفض", cost: "0", code: "" }
+      ],
+      "الرعاية": [
+        { id: "C-ICU-INF06", name: "Infusion Pumps – مضخات محاليل", type: "طبي", qty: 1, status: "يحتاج صيانة", note: "إنذار انسداد وهمي (مسحوب للصيانة)", priority: "عاجل / مرتفع", cost: "1,200 ج.م", code: "WO-2026-002" },
+        { id: "C-ICU-BP-REQ", name: "أجهزة قياس الضغط (نقص/تغطية)", type: "طبي", qty: 2, status: "نقص وتغطية", note: "العدد الحالي 0 ومطلوب 2 فوري + 1 متحرك", priority: "مرتفع (نقص/تغطية)", cost: "16,000 ج.م", code: "WO-2026-005" },
+        { id: "C-ICU-VENT01", name: "أجهزة التنفس الصناعي", type: "طبي", qty: 3, status: "سليم ويعمل بكفاءة", note: "معايرة ومطابقة", priority: "منخفض", cost: "0", code: "" },
+        { id: "C-ICU-MON01", name: "Patient Monitors – مونيتور", type: "طبي", qty: 9, status: "سليم ويعمل بكفاءة", note: "جميع الإشارات تعمل", priority: "منخفض", cost: "0", code: "" },
+        { id: "C-ICU-AC01", name: "التكييفات وتدفق الهواء", type: "غير طبي", qty: 7, status: "سليم ويعمل بكفاءة", note: "الفلاتر نظيفة والضغط سليم", priority: "منخفض", cost: "0", code: "" }
+      ],
+      "عيادة 2": [
+        { id: "C-CL2-BP01", name: "أجهزة قياس الضغط", type: "طبي", qty: 1, status: "خارج الخدمة", note: "تسريب كف الضغط وتلف الصمام", priority: "مرتفع", cost: "450 ج.م", code: "WO-2026-003" },
+        { id: "C-CL2-SC01", name: "موازين المرضى", type: "طبي", qty: 1, status: "خارج الخدمة", note: "خلل المعايرة وعدم ثبات الصفر", priority: "متوسط", cost: "300 ج.م", code: "WO-2026-004" },
+        { id: "C-CL2-PT01", name: "الدهانات وحالة الحوائط", type: "غير طبي", qty: 1, status: "يحتاج صيانة", note: "تقشير خلف سرير الكشف", priority: "منخفض", cost: "600 ج.م", code: "WO-2026-007" },
+        { id: "C-CL2-BED", name: "أسرة المرضى", type: "طبي", qty: 1, status: "سليم ويعمل بكفاءة", note: "مفاصل الحركة سليمة", priority: "منخفض", cost: "0", code: "" }
+      ],
+      "العمليات": [
+        { id: "C-OR-PL01", name: "السباكة والحنفيات", type: "غير طبي", qty: 2, status: "صيانة وقائية دورية", note: "حنفية الحمام بها تسريب وتعمل (استبدال مجدول)", priority: "متوسط", cost: "1,400 ج.م", code: "WO-2026-008" },
+        { id: "C-OR-MON01", name: "Patient Monitors – مونيتور (4)", type: "طبي", qty: 4, status: "سليم ويعمل بكفاءة", note: "تم فحص واختبار الأمان الكهربائي IEC 62353", priority: "عاجل / حرج", cost: "800 ج.م", code: "WO-2026-010" },
+        { id: "C-OR-HVAC", name: "التكييفات وتدفق الهواء النظيف", type: "غير طبي", qty: 6, status: "سليم ويعمل بكفاءة", note: "ضغوط الهواء الإيجابية مطابقة", priority: "منخفض", cost: "0", code: "" }
+      ],
+      "الدخلي": [
+        { id: "C-IN-AUD01", name: "استكمال جرد وفحص أصول القسم الداخلي", type: "طبي", qty: 43, status: "قيد استكمال الحصر", note: "تنبيه: الشيت الأصلي مفرغ - جاري المرور الميداني", priority: "مرتفع", cost: "0", code: "WO-2026-009" }
+      ]
+    };
+
+    const workOrders = [
+      { id: "WO-2026-001", dept: "الطوارئ", asset: "أجهزة رسم القلب ECG", type: "طبي", priority: "عاجل / حرج", sla: "أقل من 24h", status: "منتهي/مغلق", progress: 100, cost: 1850, team: "الهندسة الطبية", date: "2026-11-18" },
+      { id: "WO-2026-002", dept: "الرعاية", asset: "Infusion Pumps – مضخات محاليل", type: "طبي", priority: "عاجل / مرتفع", sla: "خلال 24-48h", status: "قيد التنفيذ", progress: 60, cost: 1200, team: "الهندسة الطبية", date: "2026-11-18" },
+      { id: "WO-2026-003", dept: "عيادة 2", asset: "أجهزة قياس الضغط", type: "طبي", priority: "مرتفع", sla: "خلال 48-72h", status: "منتهي/مغلق", progress: 100, cost: 450, team: "الهندسة الطبية", date: "2026-11-18" },
+      { id: "WO-2026-004", dept: "عيادة 2", asset: "موازين المرضى", type: "طبي", priority: "متوسط", sla: "خلال 3-5 أيام", status: "منتهي/مغلق", progress: 100, cost: 300, team: "الهندسة الطبية", date: "2026-11-18" },
+      { id: "WO-2026-005", dept: "الرعاية", asset: "أجهزة قياس الضغط (نقص)", type: "طبي", priority: "مرتفع (نقص/تغطية)", sla: "حسب إجراء التوريد", status: "بانتظار شراء وتوريد", progress: 40, cost: 16000, team: "المشتريات والتجهيزات", date: "2026-11-18" },
+      { id: "WO-2026-006", dept: "الطوارئ", asset: "الدهانات وحالة الحوائط", type: "غير طبي", priority: "متوسط", sla: "خلال 5-7 أيام", status: "قيد التنفيذ", progress: 50, cost: 950, team: "الصيانة العامة", date: "2026-11-18" },
+      { id: "WO-2026-007", dept: "عيادة 2", asset: "الدهانات وحالة الحوائط", type: "غير طبي", priority: "منخفض", sla: "خلال 7-14 يوماً", status: "قيد التنفيذ", progress: 70, cost: 600, team: "الصيانة العامة", date: "2026-11-18" },
+      { id: "WO-2026-008", dept: "العمليات", asset: "السباكة والحنفيات", type: "غير طبي", priority: "متوسط", sla: "خلال 3-5 أيام", status: "منتهي/مغلق", progress: 100, cost: 1400, team: "الصيانة العامة", date: "2026-11-17" },
+      { id: "WO-2026-009", dept: "الدخلي", asset: "استكمال حصر أصول القسم الداخلي", type: "طبي", priority: "مرتفع", sla: "خلال 48 ساعة", status: "قيد استكمال الحصر", progress: 30, cost: 0, team: "الهندسة والصيانة", date: "2026-11-18" },
+      { id: "WO-2026-010", dept: "العمليات", asset: "فحص ومعايرة أجهزة المونيتور", type: "طبي", priority: "عاجل / حرج", sla: "خلال 24 ساعة", status: "منتهي/مغلق", progress: 100, cost: 800, team: "الهندسة الطبية", date: "2026-11-17" }
+    ];
+
+    const repeatAssets = [
+      { code: "C-ER-ECG01", name: "أجهزة رسم القلب ECG", dept: "الطوارئ", totalRep: 2, periodRep: 2, totalCost: "2,200 ج.م", status: "⚠️ عطل متكرر بالكابل والمغذي", action: "يوصى بتوفير كابل أصلي إضافي أو دراسة الاستبدال" },
+      { code: "C-ICU-INF06", name: "Infusion Pumps – مضخات محاليل", dept: "الرعاية", totalRep: 2, periodRep: 2, totalCost: "1,950 ج.م", status: "⚠️ تكرار عطل حساس الانسداد", action: "إلزام الوكيل المعتمد باستبدال البوردة الحساسة" },
+      { code: "C-CL2-BP01", name: "أجهزة قياس الضغط الزئبقية", dept: "عيادة 2", totalRep: 2, periodRep: 2, totalCost: "650 ج.م", status: "⚠️ تسريب مستمر في الصمامات", action: "التوصية بالتحول لأجهزة ضغط ديجيتال طبية حديثة" }
+    ];
+
+    function setRole(role) {
+      document.querySelectorAll('#role-btn-inspector, #role-btn-engineer, #role-btn-executive').forEach(btn => {
+        btn.classList.remove('bg-teal-600', 'text-white');
+        btn.classList.add('text-slate-400');
+      });
+      document.getElementById('role-btn-' + role).classList.add('bg-teal-600', 'text-white');
+      document.getElementById('role-btn-' + role).classList.remove('text-slate-400');
+
+      const banner = document.getElementById('role-title');
+      if (role === 'inspector') {
+        banner.innerText = "وضع المستخدم: فني المرور اليومي (محمود مصطفى)";
+        switchTab('inspection');
+      } else if (role === 'engineer') {
+        banner.innerText = "وضع المستخدم: مهندس الصيانة الطبية (م. أحمد فريد)";
+        switchTab('orders');
+      } else {
+        banner.innerText = "وضع المستخدم: المديرة التنفيذية (د. هالة مصطفى)";
+        switchTab('dashboard');
+      }
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('#tab-inspection, #tab-orders, #tab-dashboard, #tab-repetition').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('#nav-btn-inspection, #nav-btn-orders, #nav-btn-dashboard, #nav-btn-repetition').forEach(btn => {
+        btn.classList.remove('text-teal-400', 'font-semibold');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById('tab-' + tabName).classList.remove('hidden');
+      document.getElementById('nav-btn-' + tabName).classList.add('text-teal-400', 'font-semibold');
+      document.getElementById('nav-btn-' + tabName).classList.remove('text-slate-400');
+
+      if (tabName === 'inspection') renderDepartmentItems();
+      if (tabName === 'orders') renderOrders('all');
+      if (tabName === 'dashboard') renderDashboardBars();
+      if (tabName === 'repetition') renderRepeatAssets();
+    }
+
+    function renderDepartmentItems() {
+      const dept = document.getElementById('dept-select').value;
+      const items = departmentsData[dept] || [];
+      const list = document.getElementById('items-list');
+      list.innerHTML = '';
+
+      items.forEach((item, index) => {
+        let badgeColor = "bg-emerald-950 text-emerald-400 border-emerald-800";
+        if (item.status.includes("صيانة") || item.status.includes("خدمة")) badgeColor = "bg-rose-950 text-rose-300 border-rose-800";
+        if (item.status.includes("نقص") || item.status.includes("حصر")) badgeColor = "bg-amber-950 text-amber-300 border-amber-800";
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2";
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">${item.id}</span>
+              <h4 class="text-xs font-bold text-white mt-1">${item.name}</h4>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full border ${badgeColor} font-semibold">${item.status}</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>النوع: <strong class="text-slate-200">${item.type}</strong> | العدد: <strong class="text-slate-200">${item.qty}</strong></span>
+            ${item.priority ? `<span class="text-rose-400 font-bold text-[10px]">الأولوية: ${item.priority}</span>` : ''}
+          </div>
+          ${item.note ? `<p class="text-[11px] text-slate-300 bg-slate-950/80 p-2 rounded-lg border border-slate-800/80">📝 ${item.note}</p>` : ''}
+          <div class="pt-1 flex items-center justify-end gap-2 text-[11px]">
+            <button onclick="changeStatus('${dept}', ${index}, 'سليم ويعمل بكفاءة')" class="px-2.5 py-1 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 rounded-lg border border-emerald-700/60">تأكيد سليم</button>
+            <button onclick="reportFault('${dept}', ${index})" class="px-2.5 py-1 bg-rose-900/60 hover:bg-rose-800 text-rose-200 rounded-lg border border-rose-700/60">تسجيل عطل</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function changeStatus(dept, idx, newStatus) {
+      departmentsData[dept][idx].status = newStatus;
+      departmentsData[dept][idx].note = "تم تأكيد الفحص اللحظي بالمرور";
+      renderDepartmentItems();
+    }
+
+    function reportFault(dept, idx) {
+      const item = departmentsData[dept][idx];
+      item.status = "يحتاج صيانة";
+      item.note = "عطل مرصود حديثاً - تم ترحيل أمر عمل فوري";
+      item.priority = "عاجل / حرج";
+      alert(`⚠️ تم ترحيل البند (${item.name}) إلى سجل أوامر العمل بدرجة أولوية (عاجل P1) وبدء مهلة الـ SLA!`);
+      renderDepartmentItems();
+    }
+
+    function simulateQRScan() {
+      alert("📷 تم مسح كود QR بنجاح!\nالأصل: جهاز رسم القلب ECG (C-ER-ECG01)\nالموقع: قسم الطوارئ - سرير 1\nالحالة الحالية: يحتاج صيانة (كابل الليدات)");
+      document.getElementById('dept-select').value = "الطوارئ";
+      renderDepartmentItems();
+    }
+
+    function renderOrders(filter) {
+      const container = document.getElementById('orders-cards-list');
+      container.innerHTML = '';
+
+      let filtered = workOrders;
+      if (filter === 'p1') filtered = workOrders.filter(o => o.priority.includes('عاجل'));
+      if (filter === 'open') filtered = workOrders.filter(o => o.status !== 'منتهي/مغلق');
+      if (filter === 'closed') filtered = workOrders.filter(o => o.status === 'منتهي/مغلق');
+
+      document.getElementById('orders-count-badge').innerText = `${filtered.length} طلب`;
+
+      filtered.forEach(o => {
+        let pColor = o.priority.includes('عاجل') ? 'bg-rose-950 text-rose-300 border-rose-800' : 'bg-amber-950 text-amber-300 border-amber-800';
+        let sColor = o.status === 'منتهي/مغلق' ? 'text-emerald-400' : (o.status === 'قيد التنفيذ' ? 'text-blue-400' : 'text-amber-400');
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2";
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-[10px] font-bold text-teal-400">${o.id}</span>
+              <h4 class="text-xs font-bold text-white">${o.asset} (${o.dept})</h4>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full border ${pColor} font-bold">${o.priority}</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>المهلة: <strong class="text-white">${o.sla}</strong></span>
+            <span>المنفذ: <strong class="text-slate-300">${o.team}</strong></span>
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-[10px] text-slate-400">
+              <span>نسبة الإنجاز:</span>
+              <span class="font-bold ${sColor}">${o.status} (${o.progress}%)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${o.progress}%"></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80">
+            <span class="text-purple-300 font-bold">التكلفة: ${o.cost.toLocaleString()} ج.م</span>
+            ${o.status !== 'منتهي/مغلق' ? `<button onclick="closeOrder('${o.id}')" class="text-[10px] bg-teal-600 hover:bg-teal-500 text-white px-2 py-0.5 rounded font-bold">إغلاق واعتماد</button>` : `<span class="text-emerald-400 text-[10px]">✔️ معتمد ومغلق</span>`}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function closeOrder(orderId) {
+      const ord = workOrders.find(o => o.id === orderId);
+      if (ord) {
+        ord.status = 'منتهي/مغلق';
+        ord.progress = 100;
+        alert(`✔️ تم اعتماد وإغلاق التذكرة (${orderId}) وتسجيل زمن الحل بالكامل!`);
+        renderOrders('all');
+      }
+    }
+
+    function filterOrders(type) {
+      renderOrders(type);
+    }
+
+    function renderDashboardBars() {
+      const container = document.getElementById('dept-readiness-bars');
+      container.innerHTML = '';
+      const depts = [
+        { name: "عيادة 1", rate: 100, color: "bg-emerald-500" },
+        { name: "عيادة 3+ الإنبدي", rate: 100, color: "bg-emerald-500" },
+        { name: "عيادة 4", rate: 100, color: "bg-emerald-500" },
+        { name: "العمليات", rate: 95.3, color: "bg-emerald-500" },
+        { name: "الرعاية المركزة", rate: 94.3, color: "bg-teal-500" },
+        { name: "الطوارئ", rate: 93.3, color: "bg-amber-500" },
+        { name: "عيادة 2", rate: 83.3, color: "bg-rose-500" },
+        { name: "القسم الداخلي", rate: 70.0, color: "bg-rose-500" }
+      ];
+
+      depts.forEach(d => {
+        const row = document.createElement('div');
+        row.className = "space-y-1";
+        row.innerHTML = `
+          <div class="flex justify-between text-[11px]">
+            <span class="text-slate-300 font-medium">${d.name}</span>
+            <span class="font-bold text-white">${d.rate}%</span>
+          </div>
+          <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+            <div class="${d.color} h-1.5 rounded-full" style="width: ${d.rate}%"></div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function updateDashMetrics() {
+      const s = document.getElementById('dash-start-date').value;
+      const e = document.getElementById('dash-end-date').value;
+      alert(`📅 تم إعادة احتساب تكاليف الصيانة للفترة من (${s}) إلى (${e}) بنجاح!`);
+    }
+
+    function renderRepeatAssets() {
+      const container = document.getElementById('repeat-assets-list');
+      container.innerHTML = '';
+      repeatAssets.forEach(a => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded">${a.code}</span>
+              <h4 class="text-xs font-bold text-white mt-1">${a.name} (${a.dept})</h4>
+            </div>
+            <span class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded font-bold">${a.totalRep} أعطال</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>التكلفة التراكمية: <strong class="text-purple-300">${a.totalCost}</strong></span>
+            <span>تكرار الفترة: <strong class="text-white">${a.periodRep} مرات</strong></span>
+          </div>
+          <div class="p-2 rounded-lg bg-rose-950/40 border border-rose-900/50 text-[11px] text-rose-200">
+            <div class="font-bold">${a.status}</div>
+            <div class="text-[10px] text-slate-300 mt-0.5">📌 التوصية: ${a.action}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Default view: Dashboard
+    switchTab('dashboard');
+  </script>
+</body>
+</html>
